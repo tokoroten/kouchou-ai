@@ -1,6 +1,8 @@
 # 広聴AI / kouchou-ai
 デジタル民主主義2030プロジェクトにおいて、ブロードリスニングを実現するためのソフトウェア「広聴AI」のリポジトリです。
 
+<!-- This is a dummy change for testing PR creation -->
+
 このプロジェクトは、[AI Objectives Institute](https://www.aiobjectivesinstitute.org/) が開発した [Talk to the City](https://github.com/AIObjectives/talk-to-the-city-reports)を参考に、日本の自治体や政治家の実務に合わせた機能改善を進めています。
 
 - 機能例
