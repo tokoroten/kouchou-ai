@@ -1,7 +1,7 @@
-import json
-import pytest
-import sys
 import os
+import sys
+
+import pytest
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../..')))
 from broadlistening.pipeline.services.parse_json_list import parse_response

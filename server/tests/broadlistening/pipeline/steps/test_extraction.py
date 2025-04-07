@@ -1,8 +1,8 @@
-import pytest
-import sys
 import os
-import json
-from unittest.mock import patch, MagicMock
+import sys
+from unittest.mock import patch
+
+import pytest
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../..')))
 from broadlistening.pipeline.steps.extraction import extract_arguments_batch, extract_batch
