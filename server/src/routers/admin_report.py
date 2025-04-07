@@ -93,10 +93,10 @@ async def get_report_config(slug: str, api_key: str = Depends(verify_admin_api_k
         config_path = settings.CONFIG_DIR / f"{slug}.json"
         if not config_path.exists():
             raise HTTPException(status_code=404, detail="Report config not found")
-        
+
         with open(config_path) as f:
             config = json.load(f)
-        
+
         return config
     except Exception as e:
         slogger.error(f"Exception: {e}", exc_info=True)

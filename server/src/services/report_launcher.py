@@ -99,22 +99,22 @@ def copy_outputs_from_source_report(source_slug: str, target_slug: str) -> None:
     """
     複製元レポートのoutputsディレクトリを複製先にコピーする。
     これにより、レポート生成処理は変更のあるステップのみを実行する。
-    
+
     Args:
         source_slug: 複製元レポートのスラッグ
         target_slug: 複製先レポートのスラッグ
     """
     import shutil
-    
+
     source_outputs_dir = settings.REPORT_DIR / source_slug
     target_outputs_dir = settings.REPORT_DIR / target_slug
-    
+
     if not source_outputs_dir.exists():
         raise ValueError(f"Source report outputs directory not found: {source_outputs_dir}")
-    
+
     target_outputs_dir.mkdir(parents=True, exist_ok=True)
-    
-    for item in source_outputs_dir.glob('*'):
+
+    for item in source_outputs_dir.glob("*"):
         if item.is_file():
             shutil.copy2(item, target_outputs_dir)
         elif item.is_dir():
@@ -129,10 +129,10 @@ def launch_report_generation(report_input: ReportInput) -> None:
         add_new_report_to_status(report_input)
         config_path = save_config_file(report_input)
         save_input_file(report_input)
-        
+
         if report_input.source_report:
             copy_outputs_from_source_report(report_input.source_report, report_input.input)
-            
+
         cmd = ["python", "hierarchical_main.py", config_path, "--skip-interaction", "--without-html"]
         execution_dir = settings.TOOL_DIR / "pipeline"
         process = subprocess.Popen(cmd, cwd=execution_dir)
