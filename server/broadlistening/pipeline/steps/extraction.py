@@ -109,12 +109,12 @@ def extract_batch(batch, prompt, model, workers):
             logging.error(f"Error processing batch: {e}")
             with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
                 futures_with_index = [
-                    (idx, executor.submit(extract_arguments, input, prompt, model)) for idx, input in zip(group_indices, group)
+                    (idx, executor.submit(extract_arguments, input, prompt, model)) for idx, input in zip(group_indices, group, strict=False)
                 ]
                 
                 done, not_done = concurrent.futures.wait([f for _, f in futures_with_index], timeout=30)
                 
-                for idx, future in futures_with_index:
+                for _idx, future in futures_with_index:
                     if future in not_done and not future.cancelled():
                         future.cancel()
                 
