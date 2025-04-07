@@ -7,6 +7,11 @@ import pytest
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../..")))
 from broadlistening.pipeline.steps.extraction import extract_arguments_batch, extract_batch
 
+sys.modules["services"] = type("MockServices", (), {})
+sys.modules["services.category_classification"] = type("MockCategoryClassification", (), {"classify_args": lambda *args, **kwargs: None})
+sys.modules["services.llm"] = type("MockLLM", (), {"request_to_chat_openai": lambda *args, **kwargs: None})
+sys.modules["services.parse_json_list"] = type("MockParseJsonList", (), {"parse_response": lambda *args, **kwargs: None})
+
 
 @pytest.fixture
 def mock_request_to_chat_openai():
