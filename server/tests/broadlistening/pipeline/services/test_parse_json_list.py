@@ -3,7 +3,7 @@ import sys
 
 import pytest
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../..')))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../..")))
 from broadlistening.pipeline.services.parse_json_list import parse_response
 
 
@@ -51,7 +51,7 @@ def test_parse_response_with_single_string():
 
 def test_parse_response_with_invalid_json():
     """Test parsing invalid JSON raises an error"""
-    response = 'This is not JSON'
+    response = "This is not JSON"
     with pytest.raises(RuntimeError, match="JSON list not found"):
         parse_response(response)
 
