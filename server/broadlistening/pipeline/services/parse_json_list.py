@@ -15,7 +15,10 @@ TEST = """Response was: 以下は、提供されたテキストの要約です�
 
 def parse_response(response):
     """
-    指定されたレスポンス文字列からJSON配列を安全に抽出し、パースする。
+    指定されたレスポンス文字列からJSON配列またはオブジェクトを安全に抽出し、パースする。
+    
+    JSON配列の場合は従来通り配列として返す。
+    JSON オブジェクトの場合はオブジェクトとして返す。
 
     以下はdoctestによるテスト例。
 
@@ -38,18 +41,34 @@ def parse_response(response):
 
     >>> parse_response('"a"')
     ['a']
+    
+    >>> parse_response('{"id1": ["a", "b"], "id2": ["c"]}')
+    {'id1': ['a', 'b'], 'id2': ['c']}
     """
     try:
         obj = json.loads(response)
         if isinstance(obj, str):
             obj = [obj]
-        items = [a.strip() for a in obj if a.strip()]
-        return items
+        if isinstance(obj, list):
+            items = [a.strip() for a in obj if a.strip()]
+            return items
+        if isinstance(obj, dict):
+            return obj
+        return obj
     except Exception:
         # 不要なコードブロックを除去
         response = response.replace("```json", "").replace("```", "")
 
-        # JSON配列部分を抽出
+        if '{' in response and '}' in response:
+            match = re.search(r"\{.*?\}", response, flags=re.DOTALL)
+            if match:
+                json_str = match.group(0)
+                try:
+                    obj = json.loads(json_str)
+                    return obj
+                except Exception:
+                    pass  # 配列形式を試す
+        
         match = re.search(r"\[.*?\]", response, flags=re.DOTALL)
         if not match:
             # JSON配列が見つからなければraise
