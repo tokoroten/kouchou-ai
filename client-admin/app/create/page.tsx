@@ -18,7 +18,7 @@ import {
   Tabs
 } from '@chakra-ui/react'
 import { FileUploadDropzone, FileUploadList, FileUploadRoot } from '@/components/ui/file-upload'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Checkbox } from '@/components/ui/checkbox'
 import { parseCsv, CsvData } from '@/app/create/parseCsv'
 import { useRouter } from 'next/navigation'
@@ -51,6 +51,9 @@ export default function Page() {
   const [spreadsheetImported, setSpreadsheetImported] = useState<boolean>(false)
   const [spreadsheetLoading, setSpreadsheetLoading] = useState<boolean>(false)
   const [spreadsheetData, setSpreadsheetData] = useState<SpreadsheetComment[]>([])
+  const [sourceReport, setSourceReport] = useState<string>('')
+  const [reports, setReports] = useState<any[]>([])
+  const [loadingReports, setLoadingReports] = useState<boolean>(false)
   const [model, setModel] = useState<string>('gpt-4o-mini')
   const [clusterLv1, setClusterLv1] = useState<number>(5)
   const [clusterLv2, setClusterLv2] = useState<number>(50)
@@ -71,6 +74,10 @@ export default function Page() {
   // IDのバリデーション結果を状態として持つ
   const [isIdValid, setIsIdValid] = useState<boolean>(true)
 
+  useEffect(() => {
+    fetchReports()
+  }, [])
+
   // 入力変更時にバリデーションを実行
   const handleIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newId = e.target.value
@@ -79,6 +86,129 @@ export default function Page() {
   }
 
   const canImport = spreadsheetUrl.trim() && isIdValid && !spreadsheetImported
+
+  async function fetchReports() {
+    setLoadingReports(true)
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASEPATH}/admin/reports`, {
+        headers: {
+          'x-api-key': process.env.NEXT_PUBLIC_ADMIN_API_KEY || '',
+        },
+      })
+
+      if (!response.ok) {
+        throw new Error('レポート一覧の取得に失敗しました')
+      }
+
+      const data = await response.json()
+      setReports(data)
+    } catch (e) {
+      console.error(e)
+      toaster.create({
+        type: 'error',
+        title: 'エラー',
+        description: 'レポート一覧の取得に失敗しました',
+      })
+    } finally {
+      setLoadingReports(false)
+    }
+  }
+
+  async function loadReportConfig(slug: string) {
+    if (!slug) {
+      toaster.create({
+        type: 'error',
+        title: '入力エラー',
+        description: 'レポートを選択してください',
+      })
+      return
+    }
+
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASEPATH}/admin/reports/${slug}/config`, {
+        headers: {
+          'x-api-key': process.env.NEXT_PUBLIC_ADMIN_API_KEY || '',
+        },
+      })
+
+      if (!response.ok) {
+        throw new Error('レポート設定の取得に失敗しました')
+      }
+
+      const config = await response.json()
+      
+      const newId = v4()
+      setInput(newId)
+      
+      setQuestion(config.question || '')
+      setIntro(config.intro || '')
+      setModel(config.model || 'gpt-4o-mini')
+      setIsPubcomMode(config.is_pubcom !== undefined ? config.is_pubcom : true)
+      
+      if (config.hierarchical_clustering && config.hierarchical_clustering.cluster_nums) {
+        const clusterNums = config.hierarchical_clustering.cluster_nums
+        if (clusterNums.length >= 2) {
+          setClusterLv1(clusterNums[0])
+          setClusterLv2(clusterNums[1])
+        }
+      }
+      
+      if (config.extraction && config.extraction.workers) {
+        setWorkers(config.extraction.workers)
+      }
+      
+      if (config.extraction && config.extraction.prompt) {
+        setExtraction(config.extraction.prompt)
+      }
+      
+      if (config.hierarchical_initial_labelling && config.hierarchical_initial_labelling.prompt) {
+        setInitialLabelling(config.hierarchical_initial_labelling.prompt)
+      }
+      
+      if (config.hierarchical_merge_labelling && config.hierarchical_merge_labelling.prompt) {
+        setMergeLabelling(config.hierarchical_merge_labelling.prompt)
+      }
+      
+      if (config.hierarchical_overview && config.hierarchical_overview.prompt) {
+        setOverview(config.hierarchical_overview.prompt)
+      }
+      
+      await fetchReportComments(slug)
+      
+      toaster.create({
+        type: 'success',
+        title: '成功',
+        description: 'レポート設定を読み込みました',
+      })
+    } catch (e) {
+      console.error(e)
+      toaster.create({
+        type: 'error',
+        title: 'エラー',
+        description: 'レポート設定の取得に失敗しました',
+      })
+    }
+  }
+
+  async function fetchReportComments(slug: string) {
+    try {
+      
+      setSourceReport(slug)
+      
+      toaster.create({
+        type: 'info',
+        title: '情報',
+        description: '元のレポートのコメントデータは再利用されます',
+      })
+    } catch (e) {
+      console.error(e)
+      toaster.create({
+        type: 'warning',
+        title: '警告',
+        description: 'コメントデータの取得に失敗しましたが、設定は読み込まれました',
+      })
+    }
+  }
 
   async function importSpreadsheet() {
     if (!canImport) {
@@ -272,7 +402,9 @@ export default function Page() {
           mergeLabelling,
           overview
         },
-        is_pubcom: isPubcomMode
+        is_pubcom: isPubcomMode,
+        inputType,
+        source_report: inputType === 'existing' ? sourceReport : undefined
       }
     
       console.log('送信されるJSON:', payload)
@@ -323,7 +455,7 @@ export default function Page() {
     }
   }
   const handleTabValueChange = (details: { value: string }) => {
-    const newType = details.value as 'file' | 'spreadsheet'
+    const newType = details.value as 'file' | 'spreadsheet' | 'existing'
     setInputType(newType)
   
     if (newType === 'file' && csv) {
@@ -345,7 +477,6 @@ export default function Page() {
         setSelectedCommentColumn('comment')
       }
     } else {
-      // データがない場合はカラムリセット
       setCsvColumns([])
       setSelectedCommentColumn('')
     }
@@ -389,6 +520,7 @@ export default function Page() {
               <Tabs.List>
                 <Tabs.Trigger value="file">CSVファイル</Tabs.Trigger>
                 <Tabs.Trigger value="spreadsheet">Googleスプレッドシート</Tabs.Trigger>
+                <Tabs.Trigger value="existing">既存レポートの再利用</Tabs.Trigger>
                 <Tabs.Indicator />
               </Tabs.List>
 
@@ -569,6 +701,38 @@ export default function Page() {
                         データをクリアして再入力
                       </Button>
                     )}
+                  </VStack>
+                </Tabs.Content>
+                
+                <Tabs.Content value="existing">
+                  <VStack alignItems="stretch" w="full" gap={4}>
+                    <Field.Root>
+                      <Field.Label>既存レポートを選択</Field.Label>
+                      <NativeSelect.Root w={'100%'}>
+                        <NativeSelect.Field
+                          value={sourceReport}
+                          onChange={(e) => setSourceReport(e.target.value)}
+                        >
+                          <option value="">選択してください</option>
+                          {reports.map((report) => (
+                            <option key={report.slug} value={report.slug}>
+                              {report.question || report.slug} ({report.slug})
+                            </option>
+                          ))}
+                        </NativeSelect.Field>
+                        <NativeSelect.Indicator />
+                      </NativeSelect.Root>
+                      <Field.HelperText>
+                        再利用するレポートを選択してください
+                      </Field.HelperText>
+                    </Field.Root>
+                    <Button
+                      onClick={() => loadReportConfig(sourceReport)}
+                      loading={loadingReports}
+                      disabled={!sourceReport}
+                    >
+                      設定を読み込む
+                    </Button>
                   </VStack>
                 </Tabs.Content>
               </Box>

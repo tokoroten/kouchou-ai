@@ -30,4 +30,5 @@ class ReportInput(SchemaBaseModel):
     prompt: Prompt  # プロンプト
     comments: list[Comment]  # コメントのリスト
     is_pubcom: bool = False  # パブコメモード出力フラグ
-    inputType: Literal["file", "spreadsheet"] = "file"  # 入力タイプ
+    inputType: Literal["file", "spreadsheet", "existing"] = "file"  # 入力タイプ
+    source_report: str | None = None  # 複製元のレポートslug

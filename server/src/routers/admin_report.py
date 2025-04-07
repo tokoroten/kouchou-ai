@@ -84,3 +84,20 @@ async def update_report_visibility(slug: str, api_key: str = Depends(verify_admi
     except Exception as e:
         slogger.error(f"Exception: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal server error") from e
+
+
+@router.get("/admin/reports/{slug}/config")
+async def get_report_config(slug: str, api_key: str = Depends(verify_admin_api_key)):
+    """既存レポートの設定を取得する。レポート複製機能で使用する。"""
+    try:
+        config_path = settings.CONFIG_DIR / f"{slug}.json"
+        if not config_path.exists():
+            raise HTTPException(status_code=404, detail="Report config not found")
+        
+        with open(config_path) as f:
+            config = json.load(f)
+        
+        return config
+    except Exception as e:
+        slogger.error(f"Exception: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Internal server error") from e
