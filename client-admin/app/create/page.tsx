@@ -52,7 +52,7 @@ export default function Page() {
   const [spreadsheetLoading, setSpreadsheetLoading] = useState<boolean>(false)
   const [spreadsheetData, setSpreadsheetData] = useState<SpreadsheetComment[]>([])
   const [sourceReport, setSourceReport] = useState<string>('')
-  const [reports, setReports] = useState<any[]>([])
+  const [reports, setReports] = useState<{slug: string; question?: string}[]>([])
   const [loadingReports, setLoadingReports] = useState<boolean>(false)
   const [model, setModel] = useState<string>('gpt-4o-mini')
   const [clusterLv1, setClusterLv1] = useState<number>(5)
