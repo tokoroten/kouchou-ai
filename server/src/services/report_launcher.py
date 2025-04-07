@@ -105,7 +105,6 @@ def copy_outputs_from_source_report(source_slug: str, target_slug: str) -> None:
         target_slug: 複製先レポートのスラッグ
     """
     import shutil
-    from pathlib import Path
     
     source_outputs_dir = settings.REPORT_DIR / source_slug
     target_outputs_dir = settings.REPORT_DIR / target_slug
