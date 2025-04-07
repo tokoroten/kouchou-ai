@@ -1,7 +1,5 @@
 import os
 import sys
-import json
-import re
 
 import pytest
 
@@ -11,7 +9,7 @@ sys.modules["services"] = type("MockServices", (), {})
 sys.modules["services.category_classification"] = type("MockCategoryClassification", (), {"classify_args": lambda *args, **kwargs: None})
 sys.modules["services.llm"] = type("MockLLM", (), {"request_to_chat_openai": lambda *args, **kwargs: None})
 
-from broadlistening.pipeline.services.parse_json_list import parse_response, COMMA_AND_SPACE_AND_RIGHT_BRACKET
+from broadlistening.pipeline.services.parse_json_list import parse_response
 
 
 def test_parse_response_with_json_array():
