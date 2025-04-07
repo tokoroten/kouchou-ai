@@ -91,33 +91,34 @@ logging.basicConfig(level=logging.ERROR)
 def extract_batch(batch, prompt, model, workers):
     batch_size = 5  # 一度に処理するコメント数
     results = [[] for _ in range(len(batch))]
-    
+
     for i in range(0, len(batch), batch_size):
-        group = batch[i:i+batch_size]
-        group_indices = list(range(i, min(i+batch_size, len(batch))))
-        
-        formatted_input = "\n".join([f"- {idx+1}: {input_text}" for idx, input_text in enumerate(group)])
-        
+        group = batch[i : i + batch_size]
+        group_indices = list(range(i, min(i + batch_size, len(batch))))
+
+        formatted_input = "\n".join([f"- {idx + 1}: {input_text}" for idx, input_text in enumerate(group)])
+
         try:
             group_results = extract_arguments_batch(formatted_input, group_indices, prompt, model)
-            
+
             for idx, result_idx in enumerate(group_indices):
-                key = str(idx+1)  # 1-indexed
+                key = str(idx + 1)  # 1-indexed
                 if key in group_results:
                     results[result_idx] = group_results[key]
         except Exception as e:
             logging.error(f"Error processing batch: {e}")
             with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
                 futures_with_index = [
-                    (idx, executor.submit(extract_arguments, input, prompt, model)) for idx, input in zip(group_indices, group, strict=False)
+                    (idx, executor.submit(extract_arguments, input, prompt, model))
+                    for idx, input in zip(group_indices, group, strict=False)
                 ]
-                
+
                 done, not_done = concurrent.futures.wait([f for _, f in futures_with_index], timeout=30)
-                
+
                 for _idx, future in futures_with_index:
                     if future in not_done and not future.cancelled():
                         future.cancel()
-                
+
                 for idx, future in futures_with_index:
                     if future in done:
                         try:
@@ -126,7 +127,7 @@ def extract_batch(batch, prompt, model, workers):
                         except Exception as e:
                             logging.error(f"Task {future} failed with error: {e}")
                             results[idx] = []
-    
+
     return results
 
 
@@ -156,6 +157,7 @@ def extract_arguments(input, prompt, model, retries=1):
         print("Silently giving up on trying to generate valid list.")
         return []
 
+
 def extract_arguments_batch(input, comment_indices, prompt, model, retries=1):
     """
     複数のコメントを含む単一のリクエストを処理し、コメントIDをキーとした結果を返す
@@ -169,7 +171,7 @@ def extract_arguments_batch(input, comment_indices, prompt, model, retries=1):
         result = {}
         if isinstance(response, dict):
             for idx, _ in enumerate(comment_indices):
-                key = str(idx+1)  # 1-indexed
+                key = str(idx + 1)  # 1-indexed
                 if key in response:
                     result[key] = list(filter(None, response[key]))
         return result
