@@ -6,7 +6,9 @@ import pytest
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../..")))
 
 sys.modules["services"] = type("MockServices", (), {})
-sys.modules["services.category_classification"] = type("MockCategoryClassification", (), {"classify_args": lambda *args, **kwargs: None})
+sys.modules["services.category_classification"] = type(
+    "MockCategoryClassification", (), {"classify_args": lambda *args, **kwargs: None}
+)
 sys.modules["services.llm"] = type("MockLLM", (), {"request_to_chat_openai": lambda *args, **kwargs: None})
 
 from broadlistening.pipeline.services.parse_json_list import parse_response  # noqa: E402
