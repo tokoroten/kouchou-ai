@@ -16,7 +16,7 @@ type ReportProps = {
 export function Chart({result, selectedChart, isFullscreen, onExitFullscreen}: ReportProps) {
   if (isFullscreen) {
     return (
-      <Box w={'100%'} h={'100vh'} position={'fixed'} top={0} bottom={0} left={0} right={0} bgColor={'#fff'}>
+      <Box w={'100%'} h={'100vh'} position={'fixed'} top={0} bottom={0} left={0} right={0} bgColor={'#fff'} zIndex={1000}>
         <Tooltip
           content={'全画面終了'}
           openDelay={0}
