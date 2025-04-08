@@ -158,7 +158,9 @@ def extract_arguments(input: str, prompt: str, model: str, retries: int = 1) -> 
         return []
 
 
-def extract_arguments_batch(input: str, comment_indices: list[int], prompt: str, model: str, retries: int = 1) -> dict[str, list[str]]:
+def extract_arguments_batch(
+    input: str, comment_indices: list[int], prompt: str, model: str, retries: int = 1
+) -> dict[str, list[str]]:
     """
     複数のコメントを含む単一のリクエストを処理し、コメントIDをキーとした結果を返す
     """
