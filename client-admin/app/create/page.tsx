@@ -404,7 +404,7 @@ export default function Page() {
         },
         is_pubcom: isPubcomMode,
         inputType,
-        source_report: inputType === 'existing' ? sourceReport : undefined
+        source_report: inputType === ('existing' as const) ? sourceReport : undefined
       }
     
       console.log('送信されるJSON:', payload)
@@ -431,7 +431,7 @@ export default function Page() {
           },
           is_pubcom: isPubcomMode,
           inputType,
-          source_report: inputType === 'existing' ? sourceReport : undefined
+          source_report: inputType === ('existing' as const) ? sourceReport : undefined
         })
       })
       if (!response.ok) {
