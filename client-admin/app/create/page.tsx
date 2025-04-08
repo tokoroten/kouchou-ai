@@ -46,7 +46,7 @@ export default function Page() {
   const [question, setQuestion] = useState<string>('')
   const [intro, setIntro] = useState<string>('')
   const [csv, setCsv] = useState<File | null>(null)
-  const [inputType, setInputType] = useState<'file' | 'spreadsheet'>('file')
+  const [inputType, setInputType] = useState<'file' | 'spreadsheet' | 'existing'>('file')
   const [spreadsheetUrl, setSpreadsheetUrl] = useState<string>('')
   const [spreadsheetImported, setSpreadsheetImported] = useState<boolean>(false)
   const [spreadsheetLoading, setSpreadsheetLoading] = useState<boolean>(false)
