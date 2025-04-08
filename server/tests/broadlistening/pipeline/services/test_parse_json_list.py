@@ -9,7 +9,7 @@ sys.modules["services"] = type("MockServices", (), {})
 sys.modules["services.category_classification"] = type("MockCategoryClassification", (), {"classify_args": lambda *args, **kwargs: None})
 sys.modules["services.llm"] = type("MockLLM", (), {"request_to_chat_openai": lambda *args, **kwargs: None})
 
-from broadlistening.pipeline.services.parse_json_list import parse_response
+from broadlistening.pipeline.services.parse_json_list import parse_response  # noqa: E402
 
 
 def test_parse_response_with_json_array():

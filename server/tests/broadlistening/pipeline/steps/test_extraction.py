@@ -5,7 +5,7 @@ from unittest.mock import patch
 import pytest
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../..")))
-from broadlistening.pipeline.steps.extraction import extract_arguments_batch, extract_batch
+from broadlistening.pipeline.steps.extraction import extract_arguments_batch, extract_batch  # noqa: E402
 
 sys.modules["services"] = type("MockServices", (), {})
 sys.modules["services.category_classification"] = type("MockCategoryClassification", (), {"classify_args": lambda *args, **kwargs: None})
