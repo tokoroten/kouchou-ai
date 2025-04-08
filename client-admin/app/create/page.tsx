@@ -73,6 +73,7 @@ export default function Page() {
   const [csvColumns, setCsvColumns] = useState<string[]>([]);
   const [selectedCommentColumn, setSelectedCommentColumn] =
     useState<string>("");
+  const [autoAdjusted, setAutoAdjusted] = useState<boolean>(false);
 
   // IDのバリデーション関数
   const isValidId = (id: string): boolean => {
@@ -693,17 +694,33 @@ export default function Page() {
                     type="number"
                     value={clusterLv1.toString()}
                     min={2}
-                    max={10}
+                    max={20}
                     onChange={(e) => {
                       const v = Number(e.target.value);
                       if (!Number.isNaN(v)) {
-                        setClusterLv1(Math.max(2, Math.min(10, v)));
+                        const newClusterLv1 = Math.max(2, Math.min(20, v));
+                        setClusterLv1(newClusterLv1);
+
+                        // 第一階層のクラスタ数 * 2 > 第二階層のクラスタ数の場合のみ、第二階層の値を更新
+                        const newClusterLv2 = newClusterLv1 * 2;
+                        if (newClusterLv2 > clusterLv2) {
+                          setClusterLv2(newClusterLv2);
+                          setAutoAdjusted(true);
+                        }
                       }
                     }}
                   />
                   <Button
                     onClick={() => {
-                      setClusterLv1(Math.min(10, clusterLv1 + 1));
+                      const newClusterLv1 = Math.min(20, clusterLv1 + 1);
+                      setClusterLv1(newClusterLv1);
+
+                      // 第一階層のクラスタ数 * 2 > 第二階層のクラスタ数の場合のみ、第二階層の値を更新
+                      const newClusterLv2 = newClusterLv1 * 2;
+                      if (newClusterLv2 > clusterLv2) {
+                        setClusterLv2(newClusterLv2);
+                        setAutoAdjusted(true);
+                      }
                     }}
                     variant="outline"
                   >
@@ -712,7 +729,17 @@ export default function Page() {
                   <ChevronRightIcon width="100px" />
                   <Button
                     onClick={() => {
-                      setClusterLv2(Math.max(2, clusterLv2 - 1));
+                      const newClusterLv2 = Math.max(2, clusterLv2 - 1);
+                      setClusterLv2(newClusterLv2);
+
+                      // 第二階層の値が第一階層の値の2倍未満の場合は自動調整
+                      if (newClusterLv2 < clusterLv1 * 2) {
+                        const adjustedValue = clusterLv1 * 2;
+                        setClusterLv2(adjustedValue);
+                        setAutoAdjusted(true);
+                      } else {
+                        setAutoAdjusted(false);
+                      }
                     }}
                     variant="outline"
                   >
@@ -724,15 +751,49 @@ export default function Page() {
                     min={2}
                     max={1000}
                     onChange={(e) => {
+                      // 入力中も最大値を制限
+                      const inputValue = e.target.value;
+                      if (inputValue === "") {
+                        return; // 空の入力は無視
+                      }
+
+                      const v = Number(inputValue);
+                      if (!Number.isNaN(v)) {
+                        // 最大値を1000に制限
+                        const limitedValue = Math.min(1000, v);
+                        setClusterLv2(limitedValue);
+                      }
+                    }}
+                    onBlur={(e) => {
+                      // フォーカスが外れたときに値の検証と自動調整を行う
                       const v = Number(e.target.value);
                       if (!Number.isNaN(v)) {
-                        setClusterLv2(Math.max(2, Math.min(1000, v)));
+                        let newValue = Math.max(2, Math.min(1000, v));
+
+                        // 第二階層の値が第一階層の値の2倍未満の場合は自動調整
+                        if (newValue < clusterLv1 * 2) {
+                          newValue = clusterLv1 * 2;
+                          setClusterLv2(newValue);
+                          setAutoAdjusted(true);
+                        } else {
+                          setAutoAdjusted(false);
+                        }
                       }
                     }}
                   />
                   <Button
                     onClick={() => {
-                      setClusterLv2(Math.min(1000, clusterLv2 + 1));
+                      const newClusterLv2 = Math.min(1000, clusterLv2 + 1);
+                      setClusterLv2(newClusterLv2);
+
+                      // 第二階層の値が第一階層の値の2倍未満の場合は自動調整
+                      if (newClusterLv2 < clusterLv1 * 2) {
+                        const adjustedValue = clusterLv1 * 2;
+                        setClusterLv2(adjustedValue);
+                        setAutoAdjusted(true);
+                      } else {
+                        setAutoAdjusted(false);
+                      }
                     }}
                     variant="outline"
                   >
@@ -740,8 +801,13 @@ export default function Page() {
                   </Button>
                 </HStack>
                 <Field.HelperText>
-                  階層ごとの意見グループ生成数です
+                  階層ごとの意見グループ生成数です。
                 </Field.HelperText>
+                {autoAdjusted && (
+                  <Text color="orange.500" fontSize="sm" mt={2}>
+                    第2階層の意見グループ数が自動調整されました。第2階層の意見グループ数は第1階層の意見グループ数の2倍以上に設定してください。
+                  </Text>
+                )}
               </Field.Root>
               <Field.Root>
                 <Field.Label>並列実行数</Field.Label>
