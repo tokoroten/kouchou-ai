@@ -88,9 +88,9 @@ def extraction(config):
 logging.basicConfig(level=logging.ERROR)
 
 
-def extract_batch(batch, prompt, model, workers):
+def extract_batch(batch: list[str], prompt: str, model: str, workers: int) -> list[list[str]]:
     batch_size = 5  # 一度に処理するコメント数
-    results = [[] for _ in range(len(batch))]
+    results: list[list[str]] = [[] for _ in range(len(batch))]
 
     for i in range(0, len(batch), batch_size):
         group = batch[i : i + batch_size]
@@ -131,7 +131,7 @@ def extract_batch(batch, prompt, model, workers):
     return results
 
 
-def extract_by_llm(input, prompt, model):
+def extract_by_llm(input: str, prompt: str, model: str) -> str:
     messages = [
         {"role": "system", "content": prompt},
         {"role": "user", "content": input},
@@ -140,7 +140,7 @@ def extract_by_llm(input, prompt, model):
     return response
 
 
-def extract_arguments(input, prompt, model, retries=1):
+def extract_arguments(input: str, prompt: str, model: str, retries: int = 1) -> list[str]:
     messages = [
         {"role": "system", "content": prompt},
         {"role": "user", "content": input},
@@ -148,7 +148,7 @@ def extract_arguments(input, prompt, model, retries=1):
     try:
         response = request_to_chat_openai(messages=messages, model=model, is_json=False)
         items = parse_response(response)
-        items = filter(None, items)  # omit empty strings
+        items = list(filter(None, items))  # omit empty strings
         return items
     except json.decoder.JSONDecodeError as e:
         print("JSON error:", e)
@@ -158,7 +158,7 @@ def extract_arguments(input, prompt, model, retries=1):
         return []
 
 
-def extract_arguments_batch(input, comment_indices, prompt, model, retries=1):
+def extract_arguments_batch(input: str, comment_indices: list[int], prompt: str, model: str, retries: int = 1) -> dict[str, list[str]]:
     """
     複数のコメントを含む単一のリクエストを処理し、コメントIDをキーとした結果を返す
     """
@@ -168,7 +168,7 @@ def extract_arguments_batch(input, comment_indices, prompt, model, retries=1):
     ]
     try:
         response = request_to_chat_openai(messages=messages, model=model, is_json=True)
-        result = {}
+        result: dict[str, list[str]] = {}
         if isinstance(response, dict):
             for idx, _ in enumerate(comment_indices):
                 key = str(idx + 1)  # 1-indexed

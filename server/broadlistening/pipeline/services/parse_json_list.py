@@ -13,7 +13,7 @@ TEST = """Response was: 以下は、提供されたテキストの要約です�
 ]"""
 
 
-def parse_response(response):
+def parse_response(response: str) -> list[str] | dict:
     """
     指定されたレスポンス文字列からJSON配列またはオブジェクトを安全に抽出し、パースする。
 
