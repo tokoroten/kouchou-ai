@@ -1,7 +1,13 @@
 'use client'
 
-import Link from 'next/link'
+import { initialLabellingPrompt } from '@/app/create/initialLabellingPrompt'
+import { mergeLabellingPrompt } from '@/app/create/mergeLabellingPrompt'
+import { overviewPrompt } from '@/app/create/overviewPrompt'
+import { CsvData, parseCsv } from '@/app/create/parseCsv'
 import { Header } from '@/components/Header'
+import { Checkbox } from '@/components/ui/checkbox'
+import { FileUploadDropzone, FileUploadList, FileUploadRoot } from '@/components/ui/file-upload'
+import { toaster } from '@/components/ui/toaster'
 import {
   Box,
   Button,
@@ -11,24 +17,18 @@ import {
   Input,
   NativeSelect,
   Presence,
+  Tabs,
+  Text,
   Textarea,
   useDisclosure,
-  VStack,
-  Text,
-  Tabs
+  VStack
 } from '@chakra-ui/react'
-import { FileUploadDropzone, FileUploadList, FileUploadRoot } from '@/components/ui/file-upload'
-import { useState } from 'react'
-import { Checkbox } from '@/components/ui/checkbox'
-import { parseCsv, CsvData } from '@/app/create/parseCsv'
-import { useRouter } from 'next/navigation'
-import { toaster } from '@/components/ui/toaster'
-import { extractionPrompt } from './extractionPrompt'
-import { initialLabellingPrompt } from '@/app/create/initialLabellingPrompt'
-import { mergeLabellingPrompt } from '@/app/create/mergeLabellingPrompt'
-import { overviewPrompt } from '@/app/create/overviewPrompt'
 import { ChevronRightIcon, DownloadIcon } from 'lucide-react'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { useState } from 'react'
 import { v4 } from 'uuid'
+import { extractionPrompt } from './extractionPrompt'
 
 interface SpreadsheetComment {
   id?: string
@@ -608,7 +608,7 @@ export default function Page() {
                     setIsPubcomMode(checked)
                   }}
                 >
-                パブコメモード
+                csv出力モード
                 </Checkbox>
                 <Field.HelperText>
                 元のコメントと要約された意見をCSV形式で出力します。完成したCSVファイルはレポート一覧ページからダウンロードできます。

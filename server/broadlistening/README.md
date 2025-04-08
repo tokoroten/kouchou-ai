@@ -107,10 +107,10 @@ hierarchical_main.py は、FastAPI のサーバーにおいてレポート作成
 - 意見データ、クラスタデータ、プロパティマップなどを構築
 - カスタムイントロを生成
 - すべての情報を JSON 形式で保存
-- コメント原文つき意見データを CSV ファイルに保存（パブコメモードのみ）
+- コメント原文つき意見データを CSV ファイルに保存（CSV出力モードのみ）
 
 **出力**: `outputs/{dataset}/hierarchical_result.json`
-`outputs/{dataset}/final_result_with_comments.csv`（パブコメモードのみ）
+`outputs/{dataset}/final_result_with_comments.csv`（CSV出力モードのみ）
 
 ### 8. hierarchical_visualization
 
