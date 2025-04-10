@@ -119,40 +119,33 @@ async def create_static_export(api_key: str = Depends(verify_admin_api_key)):
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_dir_path = Path(temp_dir)
             zip_path = temp_dir_path / "static_export.zip"
-            
+
             repo_root = Path(__file__).parent.parent.parent.parent.resolve()
             script_path = repo_root / "server" / "scripts" / "static_export.sh"
-            
+
             if not os.access(script_path, os.X_OK):
                 raise HTTPException(status_code=500, detail="Static export script is not executable")
-            
+
             process = subprocess.run(
                 [script_path],
                 capture_output=True,
                 text=True,
             )
-            
+
             if process.returncode != 0:
                 slogger.error(f"静的エクスポート実行エラー: {process.stderr}")
                 raise HTTPException(status_code=500, detail=f"Static export process failed: {process.stderr}")
-            
+
             out_dir = repo_root / "out"
             if not out_dir.exists():
                 raise HTTPException(status_code=500, detail="Static export failed - output directory not found")
-            
+
             with ZipFile(zip_path, "w") as zipf:
                 for file_path in out_dir.rglob("*"):
                     if file_path.is_file():
-                        zipf.write(
-                            file_path, 
-                            arcname=str(file_path.relative_to(out_dir))
-                        )
-            
-            return FileResponse(
-                path=str(zip_path),
-                media_type="application/zip",
-                filename="static_export.zip"
-            )
+                        zipf.write(file_path, arcname=str(file_path.relative_to(out_dir)))
+
+            return FileResponse(path=str(zip_path), media_type="application/zip", filename="static_export.zip")
     except subprocess.CalledProcessError as e:
         slogger.error(f"静的エクスポート実行エラー: {e.stderr}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Static export process failed: {e.stderr}") from e
