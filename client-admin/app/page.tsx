@@ -435,12 +435,10 @@ export default function Page() {
                   alert("静的HTMLのエクスポートを開始します。このプロセスには数分かかることがあります。");
                   
                   const response = await fetch(
-                    `${getApiBaseUrl()}/admin/static-export`,
+                    `${process.env.NEXT_PUBLIC_CLIENT_BASEPATH}/api/static-export`,
                     {
-                      method: "POST",
+                      method: "GET",
                       headers: {
-                        "x-api-key":
-                          process.env.NEXT_PUBLIC_ADMIN_API_KEY || "",
                         "Content-Type": "application/json",
                       },
                     },
