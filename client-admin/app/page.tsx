@@ -428,7 +428,6 @@ export default function Page() {
             closeDelay={0}
           >
             <Button
-              leftIcon={<FileDownIcon />}
               colorScheme="blue"
               variant="outline"
               onClick={async () => {
@@ -465,6 +464,9 @@ export default function Page() {
                 }
               }}
             >
+              <Icon>
+                <FileDownIcon />
+              </Icon>
               全レポートをエクスポート
             </Button>
           </Tooltip>
