@@ -30,6 +30,7 @@ import {
   DownloadIcon,
   EllipsisIcon,
   ExternalLinkIcon,
+  FileDownIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -420,6 +421,54 @@ export default function Page() {
         <Heading textAlign="center" fontSize="xl" mb={5}>
           Reports
         </Heading>
+        <HStack justify="center" mb={5}>
+          <Tooltip
+            content="静的HTMLをエクスポート"
+            openDelay={0}
+            closeDelay={0}
+          >
+            <Button
+              leftIcon={<FileDownIcon />}
+              colorScheme="blue"
+              variant="outline"
+              onClick={async () => {
+                try {
+                  alert("静的HTMLのエクスポートを開始します。このプロセスには数分かかることがあります。");
+                  
+                  const response = await fetch(
+                    `${getApiBaseUrl()}/admin/static-export`,
+                    {
+                      method: "POST",
+                      headers: {
+                        "x-api-key":
+                          process.env.NEXT_PUBLIC_ADMIN_API_KEY || "",
+                        "Content-Type": "application/json",
+                      },
+                    },
+                  );
+                  if (!response.ok) {
+                    throw new Error("静的エクスポート失敗");
+                  }
+                  
+                  const blob = await response.blob();
+                  const url = window.URL.createObjectURL(blob);
+                  const link = document.createElement("a");
+                  link.href = url;
+                  link.download = "static_export.zip";
+                  link.click();
+                  window.URL.revokeObjectURL(url);
+                  
+                  alert("静的HTMLのエクスポートが完了しました");
+                } catch (error) {
+                  console.error(error);
+                  alert("静的HTMLのエクスポートに失敗しました");
+                }
+              }}
+            >
+              全レポートをエクスポート
+            </Button>
+          </Tooltip>
+        </HStack>
         {!reports && (
           <VStack>
             <Spinner />
