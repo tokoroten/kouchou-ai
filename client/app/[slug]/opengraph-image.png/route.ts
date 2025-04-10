@@ -3,6 +3,8 @@ import { OpImage } from "../_op-image";
 
 export { generateStaticParams };
 
+export const dynamic = 'force-dynamic';
+
 // static build時のOGP画像生成用のroute
 // ref: https://github.com/vercel/next.js/issues/51147#issuecomment-1842197049
 export async function GET(req: Request, { params }: { params: { slug: string } }) {
