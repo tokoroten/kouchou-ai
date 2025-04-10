@@ -123,10 +123,10 @@ async def create_static_export(api_key: str = Depends(verify_admin_api_key)):
 
             repo_root = Path(__file__).parent.parent.parent.parent.resolve()
             out_dir = repo_root / "out"
-            
+
             if out_dir.exists():
                 subprocess.run(["rm", "-rf", str(out_dir)], check=True)
-            
+
             slogger.info("Starting API container...")
             subprocess.run(
                 ["docker", "compose", "up", "-d", "api"],
@@ -135,28 +135,35 @@ async def create_static_export(api_key: str = Depends(verify_admin_api_key)):
                 text=True,
                 check=True,
             )
-            
+
             try:
                 slogger.info("Running build in client container...")
                 user_id = os.getuid()
                 group_id = os.getgid()
-                
+
                 subprocess.run(
                     [
-                        "docker", "compose", "run",
-                        "--user", f"{user_id}:{group_id}",
+                        "docker",
+                        "compose",
+                        "run",
+                        "--user",
+                        f"{user_id}:{group_id}",
                         "--rm",
-                        "-v", f"{repo_root}/server:/server",
-                        "-v", f"{repo_root}/out:/app/dist",
+                        "-v",
+                        f"{repo_root}/server:/server",
+                        "-v",
+                        f"{repo_root}/out:/app/dist",
                         "client",
-                        "sh", "-c", "npm run build:static && cp -r out/* dist"
+                        "sh",
+                        "-c",
+                        "npm run build:static && cp -r out/* dist",
                     ],
                     cwd=repo_root,
                     capture_output=True,
                     text=True,
                     check=True,
                 )
-                
+
                 slogger.info("Stopping containers...")
                 subprocess.run(
                     ["docker", "compose", "down"],
@@ -165,16 +172,16 @@ async def create_static_export(api_key: str = Depends(verify_admin_api_key)):
                     text=True,
                     check=True,
                 )
-                
+
                 if not out_dir.exists():
                     raise HTTPException(status_code=500, detail="Static export failed - output directory not found")
-                
+
                 slogger.info("Creating ZIP file...")
                 with ZipFile(zip_path, "w") as zipf:
                     for file_path in out_dir.rglob("*"):
                         if file_path.is_file():
                             zipf.write(file_path, arcname=str(file_path.relative_to(out_dir)))
-                
+
                 return FileResponse(path=str(zip_path), media_type="application/zip", filename="static_export.zip")
             finally:
                 try:
