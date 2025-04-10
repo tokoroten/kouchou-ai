@@ -6,7 +6,11 @@ let ignoreFiles = [];
 
 if (process.env.NEXT_PUBLIC_OUTPUT_MODE === "export") {
   // static build 時にビルド対象から除外するファイル
-  ignoreFiles = ["app/[slug]/opengraph-image.tsx"];
+  // OpenGraph画像関連のファイルを両方除外して型エラーを回避
+  ignoreFiles = [
+    "app/[slug]/opengraph-image.tsx",
+    "app/[slug]/opengraph-image.png/route.ts"
+  ];
 } else {
   // 通常のビルド時にビルド対象から除外するファイル
   ignoreFiles = ["app/[slug]/opengraph-image.png/route.ts"];
