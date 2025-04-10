@@ -4,7 +4,7 @@ import { promisify } from "util";
 import fs from "fs";
 import path from "path";
 import { createReadStream } from "fs";
-import { pipeline } from "stream/promises";
+
 
 const execAsync = promisify(exec);
 
@@ -62,11 +62,12 @@ export async function GET() {
     response.headers.set("Content-Type", "application/zip");
     response.headers.set("Content-Disposition", "attachment; filename=static_export.zip");
     
-    response.body.on("end", () => {
+    setTimeout(() => {
       if (fs.existsSync(zipFilePath)) {
         fs.unlinkSync(zipFilePath);
+        console.log("Temporary ZIP file deleted");
       }
-    });
+    }, 5000); // Give enough time for the file to be sent
     
     return response;
   } catch (error) {
