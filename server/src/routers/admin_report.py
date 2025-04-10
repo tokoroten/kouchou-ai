@@ -128,7 +128,7 @@ async def create_static_export(api_key: str = Depends(verify_admin_api_key)):
                 subprocess.run(["rm", "-rf", str(out_dir)], check=True)
             
             slogger.info("Starting API container...")
-            process_api = subprocess.run(
+            subprocess.run(
                 ["docker", "compose", "up", "-d", "api"],
                 cwd=repo_root,
                 capture_output=True,
@@ -141,7 +141,7 @@ async def create_static_export(api_key: str = Depends(verify_admin_api_key)):
                 user_id = os.getuid()
                 group_id = os.getgid()
                 
-                process_build = subprocess.run(
+                subprocess.run(
                     [
                         "docker", "compose", "run",
                         "--user", f"{user_id}:{group_id}",
