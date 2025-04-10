@@ -155,7 +155,7 @@ async def create_static_export(api_key: str = Depends(verify_admin_api_key)):
             )
     except subprocess.CalledProcessError as e:
         slogger.error(f"静的エクスポート実行エラー: {e.stderr}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Static export process failed: {e.stderr}")
+        raise HTTPException(status_code=500, detail=f"Static export process failed: {e.stderr}") from e
     except Exception as e:
         slogger.error(f"Exception: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal server error") from e
