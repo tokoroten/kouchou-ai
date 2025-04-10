@@ -100,7 +100,9 @@ export default async function Page() {
       <p>
         エラー：データの取得に失敗しました
         <br />
-        Error: fetch failed to {process.env.NEXT_PUBLIC_API_BASEPATH}.
+        Error: fetch failed to {process.env.NEXT_PUBLIC_OUTPUT_MODE === "export" 
+          ? "API server" 
+          : process.env.NEXT_PUBLIC_API_BASEPATH}.
       </p>
     );
   }

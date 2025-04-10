@@ -60,11 +60,14 @@ export async function generateMetadata({
     const metaData: Metadata = {
       title: `${result.config.question} - ${meta.reporter}`,
       description: `${result.overview}`,
-      metadataBase: new URL(
-        process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000",
-      ),
     };
 
+    if (process.env.NEXT_PUBLIC_OUTPUT_MODE !== "export") {
+      metaData.metadataBase = new URL(
+        process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000",
+      );
+    }
+    
     if (process.env.NEXT_PUBLIC_OUTPUT_MODE === "export") {
       metaData.openGraph = {
         images: [`${slug}/opengraph-image.png`],

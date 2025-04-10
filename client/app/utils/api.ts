@@ -1,4 +1,8 @@
 export const getApiBaseUrl = () => {
+  if (process.env.NEXT_PUBLIC_OUTPUT_MODE === "export") {
+    return "";
+  }
+
   if (typeof window !== "undefined") {
     return process.env.NEXT_PUBLIC_API_BASEPATH;
   }

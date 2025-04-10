@@ -34,7 +34,8 @@ jobs:
         run: npm ci
 
       - name: Run build
-        run: npm run build
+        run: npm run build:static
         env:
-          NEXT_PUBLIC_API_BASEPATH: 'http://localhost:8000'
+          NEXT_PUBLIC_API_BASEPATH: ''
           NEXT_PUBLIC_PUBLIC_API_KEY: 'xxxxxxxxxx'
+          NEXT_PUBLIC_OUTPUT_MODE: 'export'
