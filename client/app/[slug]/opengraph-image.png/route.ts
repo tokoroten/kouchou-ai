@@ -6,9 +6,9 @@ export { generateStaticParams };
 // static build時のOGP画像生成用のroute
 // ref: https://github.com/vercel/next.js/issues/51147#issuecomment-1842197049
 export async function GET(
-  _: Request,
-  { params }: { params: { slug: string } }
+  request: Request,
+  context: { params: { slug: string } }
 ) {
-  const slug = params.slug;
+  const slug = context.params.slug;
   return OpImage(slug);
 }
