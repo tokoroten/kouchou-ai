@@ -36,7 +36,7 @@ async function handleExport(request: Request) {
     if (process.env.DOCKER_ENV === "true") {
       console.log("Docker環境を検出しました。makeコマンドを実行します...");
       
-      const appRoot = path.resolve(process.cwd(), "../..");
+      const appRoot = "/";
       console.log(`リポジトリルート: ${appRoot}`);
       
       console.log("make client-build-staticを実行中...");
@@ -108,7 +108,7 @@ async function handleExport(request: Request) {
     else {
       console.log("非Docker環境を検出しました。直接makeコマンドを実行します...");
       
-      const appRoot = path.resolve(process.cwd(), "../..");
+      const appRoot = "/";
       console.log(`リポジトリルート: ${appRoot}`);
       
       console.log("make client-build-staticを実行中...");
