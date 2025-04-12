@@ -5,8 +5,9 @@ import fs from "fs";
 import path from "path";
 import JSZip from "jszip";
 
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
+export const dynamic = process.env.NEXT_PUBLIC_OUTPUT_MODE === "export" 
+  ? "error" 
+  : "force-dynamic";
 export const runtime = "nodejs";
 
 const execAsync = promisify(exec);

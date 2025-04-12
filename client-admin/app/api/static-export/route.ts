@@ -5,8 +5,9 @@ import fs from "fs";
 import path from "path";
 import JSZip from "jszip";
 
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
+export const dynamic = process.env.NEXT_PUBLIC_OUTPUT_MODE === "export" 
+  ? "error" 
+  : "force-dynamic";
 export const runtime = "nodejs";
 
 const execAsync = promisify(exec);
@@ -40,13 +41,20 @@ async function handleExport(request: Request) {
       console.log(`Forwarding to: ${clientApiUrl}`);
       
       try {
+        console.log("Sending request to client container API...");
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000);
+        
         const clientResponse = await fetch(clientApiUrl, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             "x-api-key": request.headers.get("x-api-key") || "",
           },
+          signal: controller.signal
         });
+        
+        clearTimeout(timeoutId);
         
         if (!clientResponse.ok) {
           const errorText = await clientResponse.text();
