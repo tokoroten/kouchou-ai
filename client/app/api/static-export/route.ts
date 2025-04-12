@@ -37,7 +37,7 @@ async function handleExport(request: Request) {
     console.log(`Running next build with export...`);
     
     const buildCommand = process.env.DOCKER_ENV === "true" 
-      ? "cd /app && npm run build:static"
+      ? "cd /app && NEXT_PUBLIC_OUTPUT_MODE=export npx next build"
       : "npm run build:static";
     
     console.log(`Executing command: ${buildCommand}`);
