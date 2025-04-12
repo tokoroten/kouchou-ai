@@ -32,6 +32,9 @@ async function handleExport(request: Request) {
     const appRoot = path.resolve(process.cwd());
     
     console.log("Starting static export process...");
+    console.log(`App root: ${appRoot}`);
+    console.log(`Running in Docker environment: ${process.env.DOCKER_ENV === "true"}`);
+    console.log(`Running next build with export...`);
     
     const buildCommand = "npm run build:static";
     console.log(`Executing command: ${buildCommand}`);
@@ -41,7 +44,8 @@ async function handleExport(request: Request) {
       env: {
         ...process.env,
         NEXT_PUBLIC_OUTPUT_MODE: "export",
-      },
+        NODE_ENV: "production"
+      }
     });
     
     console.log("Static export stdout:", stdout);
