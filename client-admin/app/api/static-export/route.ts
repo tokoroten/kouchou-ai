@@ -34,57 +34,77 @@ async function handleExport(request: Request) {
     console.log("DOCKER_ENV:", process.env.DOCKER_ENV);
     
     if (process.env.DOCKER_ENV === "true") {
-      console.log("Docker環境を検出しました。client側のAPIを呼び出します...");
+      console.log("Docker環境を検出しました。makeコマンドを実行します...");
       
-      const clientHost = "http://client:3000";
-      const clientApiUrl = `${clientHost}/api/static-export`;
-      console.log(`Forwarding to: ${clientApiUrl}`);
+      const appRoot = path.resolve(process.cwd(), "../..");
+      console.log(`リポジトリルート: ${appRoot}`);
       
-      try {
-        console.log("Sending request to client container API...");
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 30000);
-        
-        const clientResponse = await fetch(clientApiUrl, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "x-api-key": request.headers.get("x-api-key") || "",
-          },
-          signal: controller.signal
-        });
-        
-        clearTimeout(timeoutId);
-        
-        if (!clientResponse.ok) {
-          const errorText = await clientResponse.text();
-          console.error("Client static export API error:", errorText);
-          return NextResponse.json(
-            { error: "Static export failed", details: errorText },
-            { status: clientResponse.status, headers }
-          );
-        }
-        
-        const zipBuffer = await clientResponse.arrayBuffer();
-        console.log(`Received ZIP file from client, size: ${zipBuffer.byteLength} bytes`);
-        
-        const nextResponse = new NextResponse(zipBuffer);
-        nextResponse.headers.set("Content-Type", "application/zip");
-        nextResponse.headers.set("Content-Disposition", "attachment; filename=static_export.zip");
-        
-        Object.entries(headers).forEach(([key, value]) => {
-          nextResponse.headers.set(key, value);
-        });
-        
-        return nextResponse;
-      } catch (fetchError) {
-        console.error("Error forwarding to client:", fetchError);
+      console.log("make client-build-staticを実行中...");
+      const { stdout, stderr } = await execAsync("make client-build-static", {
+        cwd: appRoot,
+        env: {
+          ...process.env,
+          NEXT_PUBLIC_OUTPUT_MODE: "export",
+          NODE_ENV: "production"
+        },
+        maxBuffer: 10 * 1024 * 1024 // 10MB buffer for large outputs
+      });
+      
+      console.log("make stdout:", stdout);
+      
+      if (stderr && !stderr.includes("make")) {
+        console.error("make stderr:", stderr);
         return NextResponse.json(
-          { error: "Failed to connect to client service", details: String(fetchError) },
+          { error: "Static export failed", details: stderr },
           { status: 500, headers }
         );
       }
-    } 
+      
+      const outDir = path.join(appRoot, "out");
+      
+      if (!fs.existsSync(outDir)) {
+        return NextResponse.json(
+          { error: "Static export failed - output directory not found" },
+          { status: 500, headers }
+        );
+      }
+      
+      console.log(`Creating ZIP from directory: ${outDir}`);
+      const zip = new JSZip();
+      
+      const addFilesToZip = (dirPath: string, relativePath: string = "") => {
+        const entries = fs.readdirSync(dirPath, { withFileTypes: true });
+        
+        for (const entry of entries) {
+          const fullPath = path.join(dirPath, entry.name);
+          const zipPath = path.join(relativePath, entry.name);
+          
+          if (entry.isDirectory()) {
+            addFilesToZip(fullPath, zipPath);
+          } else {
+            const fileContent = fs.readFileSync(fullPath);
+            zip.file(zipPath, fileContent);
+          }
+        }
+      };
+      
+      addFilesToZip(outDir);
+      
+      console.log("Generating ZIP file...");
+      const zipBuffer = await zip.generateAsync({ type: "nodebuffer" });
+      
+      console.log(`ZIP file generated, size: ${zipBuffer.length} bytes`);
+      const response = new NextResponse(zipBuffer);
+      
+      response.headers.set("Content-Type", "application/zip");
+      response.headers.set("Content-Disposition", "attachment; filename=static_export.zip");
+      
+      Object.entries(headers).forEach(([key, value]) => {
+        response.headers.set(key, value);
+      });
+      
+      return response;
+    }
     else {
       console.log("非Docker環境を検出しました。直接makeコマンドを実行します...");
       
