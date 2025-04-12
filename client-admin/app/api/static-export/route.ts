@@ -1,15 +1,19 @@
 import { NextResponse } from "next/server";
+import { exec } from "child_process";
+import { promisify } from "util";
+import fs from "fs";
+import path from "path";
+import JSZip from "jszip";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 export const runtime = "nodejs";
 
+const execAsync = promisify(exec);
+
 /**
  * 静的エクスポートを実行し、結果をZIPファイルとして返すAPIエンドポイント
  * GET/POSTどちらのメソッドでも同じ処理を行う
- * 
- * このエンドポイントはclient側のstatic-exportエンドポイントにリクエストを転送し、
- * 結果をそのまま返します。これにより、client側でstatic exportを実行できます。
  */
 async function handleExport(request: Request) {
   const origin = request.headers.get("origin") || "";
@@ -25,44 +29,109 @@ async function handleExport(request: Request) {
   }
   
   try {
-    console.log("Forwarding static export request to client service...");
-    
-    const clientHost = process.env.DOCKER_ENV === "true" 
-      ? "http://client:3000" 
-      : process.env.CLIENT_API_URL || "http://localhost:3000";
-    
-    const clientApiUrl = `${clientHost}/api/static-export`;
-    console.log(`Forwarding to: ${clientApiUrl}`);
-    
-    const clientResponse = await fetch(clientApiUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": request.headers.get("x-api-key") || "",
-      },
-    });
-    
-    if (!clientResponse.ok) {
-      const errorText = await clientResponse.text();
-      console.error("Client static export API error:", errorText);
-      return NextResponse.json(
-        { error: "Static export failed", details: errorText },
-        { status: clientResponse.status, headers }
-      );
+    if (process.env.DOCKER_ENV === "true") {
+      console.log("Docker環境を検出しました。client側のAPIを呼び出します...");
+      
+      const clientHost = "http://client:3000";
+      const clientApiUrl = `${clientHost}/api/static-export`;
+      console.log(`Forwarding to: ${clientApiUrl}`);
+      
+      const clientResponse = await fetch(clientApiUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": request.headers.get("x-api-key") || "",
+        },
+      });
+      
+      if (!clientResponse.ok) {
+        const errorText = await clientResponse.text();
+        console.error("Client static export API error:", errorText);
+        return NextResponse.json(
+          { error: "Static export failed", details: errorText },
+          { status: clientResponse.status, headers }
+        );
+      }
+      
+      const zipBuffer = await clientResponse.arrayBuffer();
+      console.log(`Received ZIP file from client, size: ${zipBuffer.byteLength} bytes`);
+      
+      const nextResponse = new NextResponse(zipBuffer);
+      nextResponse.headers.set("Content-Type", "application/zip");
+      nextResponse.headers.set("Content-Disposition", "attachment; filename=static_export.zip");
+      
+      Object.entries(headers).forEach(([key, value]) => {
+        nextResponse.headers.set(key, value);
+      });
+      
+      return nextResponse;
+    } 
+    else {
+      console.log("非Docker環境を検出しました。直接makeコマンドを実行します...");
+      
+      const appRoot = path.resolve(process.cwd(), "../..");
+      console.log(`リポジトリルート: ${appRoot}`);
+      
+      console.log("make client-build-staticを実行中...");
+      const { stdout, stderr } = await execAsync("make client-build-static", {
+        cwd: appRoot
+      });
+      
+      console.log("make stdout:", stdout);
+      
+      if (stderr && !stderr.includes("make")) {
+        console.error("make stderr:", stderr);
+        return NextResponse.json(
+          { error: "Static export failed", details: stderr },
+          { status: 500, headers }
+        );
+      }
+      
+      const outDir = path.join(appRoot, "out");
+      
+      if (!fs.existsSync(outDir)) {
+        return NextResponse.json(
+          { error: "Static export failed - output directory not found" },
+          { status: 500, headers }
+        );
+      }
+      
+      console.log(`Creating ZIP from directory: ${outDir}`);
+      const zip = new JSZip();
+      
+      const addFilesToZip = (dirPath: string, relativePath: string = "") => {
+        const entries = fs.readdirSync(dirPath, { withFileTypes: true });
+        
+        for (const entry of entries) {
+          const fullPath = path.join(dirPath, entry.name);
+          const zipPath = path.join(relativePath, entry.name);
+          
+          if (entry.isDirectory()) {
+            addFilesToZip(fullPath, zipPath);
+          } else {
+            const fileContent = fs.readFileSync(fullPath);
+            zip.file(zipPath, fileContent);
+          }
+        }
+      };
+      
+      addFilesToZip(outDir);
+      
+      console.log("Generating ZIP file...");
+      const zipBuffer = await zip.generateAsync({ type: "nodebuffer" });
+      
+      console.log(`ZIP file generated, size: ${zipBuffer.length} bytes`);
+      const response = new NextResponse(zipBuffer);
+      
+      response.headers.set("Content-Type", "application/zip");
+      response.headers.set("Content-Disposition", "attachment; filename=static_export.zip");
+      
+      Object.entries(headers).forEach(([key, value]) => {
+        response.headers.set(key, value);
+      });
+      
+      return response;
     }
-    
-    const zipBuffer = await clientResponse.arrayBuffer();
-    console.log(`Received ZIP file from client, size: ${zipBuffer.byteLength} bytes`);
-    
-    const nextResponse = new NextResponse(zipBuffer);
-    nextResponse.headers.set("Content-Type", "application/zip");
-    nextResponse.headers.set("Content-Disposition", "attachment; filename=static_export.zip");
-    
-    Object.entries(headers).forEach(([key, value]) => {
-      nextResponse.headers.set(key, value);
-    });
-    
-    return nextResponse;
   } catch (error) {
     console.error("Static export error:", error);
     return NextResponse.json(
