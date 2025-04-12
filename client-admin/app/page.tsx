@@ -434,17 +434,25 @@ export default function Page() {
                 try {
                   alert("静的HTMLのエクスポートを開始します。このプロセスには数分かかることがあります。");
                   
+                  const apiUrl = `/api/static-export`;
+                  
+                  console.log(`Using API URL: ${apiUrl}`);
+                  
                   const response = await fetch(
-                    `${process.env.NEXT_PUBLIC_CLIENT_BASEPATH}/api/static-export`,
+                    apiUrl,
                     {
-                      method: "GET",
+                      method: "POST",
                       headers: {
                         "Content-Type": "application/json",
+                        "x-api-key": process.env.NEXT_PUBLIC_ADMIN_API_KEY || "",
                       },
                     },
                   );
+                  
                   if (!response.ok) {
-                    throw new Error("静的エクスポート失敗");
+                    const errorText = await response.text();
+                    console.error("Static export API error:", errorText);
+                    throw new Error(`静的エクスポート失敗: ${errorText}`);
                   }
                   
                   const blob = await response.blob();
@@ -458,14 +466,11 @@ export default function Page() {
                   alert("静的HTMLのエクスポートが完了しました");
                 } catch (error) {
                   console.error(error);
-                  alert("静的HTMLのエクスポートに失敗しました");
+                  alert(`静的HTMLのエクスポートに失敗しました: ${error}`);
                 }
               }}
             >
-              <Icon>
-                <FileDownIcon />
-              </Icon>
-              全レポートをエクスポート
+              <Icon><FileDownIcon /></Icon> 全レポートをエクスポート
             </Button>
           </Tooltip>
         </HStack>

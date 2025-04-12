@@ -3,22 +3,45 @@ import { exec } from "child_process";
 import { promisify } from "util";
 import fs from "fs";
 import path from "path";
-import { createReadStream } from "fs";
+import JSZip from "jszip";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const runtime = "nodejs";
 
 const execAsync = promisify(exec);
 
 /**
  * 静的エクスポートを実行し、結果をZIPファイルとして返すAPIエンドポイント
+ * GET/POSTどちらのメソッドでも同じ処理を行う
  */
-export async function GET() {
+async function handleExport(request: Request) {
+  const origin = request.headers.get("origin") || "";
+  
+  const headers = {
+    "Access-Control-Allow-Origin": origin,
+    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization, x-api-key",
+  };
+  
+  if (request.method === "OPTIONS") {
+    return new NextResponse(null, { headers, status: 204 });
+  }
+  
   try {
     const appRoot = path.resolve(process.cwd());
     
     console.log("Starting static export process...");
     
-    const { stdout, stderr } = await execAsync("npm run build:static", {
+    const buildCommand = "npm run build:static";
+    console.log(`Executing command: ${buildCommand}`);
+    
+    const { stdout, stderr } = await execAsync(buildCommand, {
       cwd: appRoot,
+      env: {
+        ...process.env,
+        NEXT_PUBLIC_OUTPUT_MODE: "export",
+      },
     });
     
     console.log("Static export stdout:", stdout);
@@ -27,7 +50,7 @@ export async function GET() {
       console.error("Static export stderr:", stderr);
       return NextResponse.json(
         { error: "Static export failed", details: stderr },
-        { status: 500 }
+        { status: 500, headers }
       );
     }
     
@@ -36,45 +59,71 @@ export async function GET() {
     if (!fs.existsSync(outDir)) {
       return NextResponse.json(
         { error: "Static export failed - output directory not found" },
-        { status: 500 }
+        { status: 500, headers }
       );
     }
     
-    const zipFilePath = path.join(appRoot, "static_export.zip");
+    console.log(`Creating ZIP from directory: ${outDir}`);
+    const zip = new JSZip();
     
-    if (fs.existsSync(zipFilePath)) {
-      fs.unlinkSync(zipFilePath);
-    }
+    const addFilesToZip = (dirPath: string, relativePath: string = "") => {
+      const entries = fs.readdirSync(dirPath, { withFileTypes: true });
+      
+      for (const entry of entries) {
+        const fullPath = path.join(dirPath, entry.name);
+        const zipPath = path.join(relativePath, entry.name);
+        
+        if (entry.isDirectory()) {
+          addFilesToZip(fullPath, zipPath);
+        } else {
+          const fileContent = fs.readFileSync(fullPath);
+          zip.file(zipPath, fileContent);
+        }
+      }
+    };
     
-    await execAsync(`cd ${outDir} && zip -r ${zipFilePath} .`);
+    addFilesToZip(outDir);
     
-    if (!fs.existsSync(zipFilePath)) {
-      return NextResponse.json(
-        { error: "Failed to create ZIP file" },
-        { status: 500 }
-      );
-    }
+    console.log("Generating ZIP file...");
+    const zipBuffer = await zip.generateAsync({ type: "nodebuffer" });
     
-    const fileStream = createReadStream(zipFilePath);
-    
-    const response = new NextResponse(fileStream as any);
+    console.log(`ZIP file generated, size: ${zipBuffer.length} bytes`);
+    const response = new NextResponse(zipBuffer);
     
     response.headers.set("Content-Type", "application/zip");
     response.headers.set("Content-Disposition", "attachment; filename=static_export.zip");
     
-    setTimeout(() => {
-      if (fs.existsSync(zipFilePath)) {
-        fs.unlinkSync(zipFilePath);
-        console.log("Temporary ZIP file deleted");
-      }
-    }, 5000); // Give enough time for the file to be sent
+    Object.entries(headers).forEach(([key, value]) => {
+      response.headers.set(key, value);
+    });
     
     return response;
   } catch (error) {
     console.error("Static export error:", error);
     return NextResponse.json(
       { error: "Static export failed", details: String(error) },
-      { status: 500 }
+      { status: 500, headers }
     );
   }
+}
+
+export async function GET(request: Request) {
+  return handleExport(request);
+}
+
+export async function POST(request: Request) {
+  return handleExport(request);
+}
+
+export async function OPTIONS(request: Request) {
+  const origin = request.headers.get("origin") || "";
+  
+  return new NextResponse(null, {
+    status: 204,
+    headers: {
+      "Access-Control-Allow-Origin": origin,
+      "Access-Control-Allow-Methods": "GET, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization, x-api-key",
+    },
+  });
 }
