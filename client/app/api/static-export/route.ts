@@ -36,7 +36,10 @@ async function handleExport(request: Request) {
     console.log(`Running in Docker environment: ${process.env.DOCKER_ENV === "true"}`);
     console.log(`Running next build with export...`);
     
-    const buildCommand = "npm run build:static";
+    const buildCommand = process.env.DOCKER_ENV === "true" 
+      ? "cd /app && NEXT_PUBLIC_OUTPUT_MODE=export npm run build"
+      : "npm run build:static";
+    
     console.log(`Executing command: ${buildCommand}`);
     
     const { stdout, stderr } = await execAsync(buildCommand, {
