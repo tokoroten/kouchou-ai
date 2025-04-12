@@ -37,10 +37,13 @@ async function handleExport(request: Request) {
     console.log(`Running next build with export...`);
     
     const buildCommand = process.env.DOCKER_ENV === "true" 
-      ? "cd /app && NEXT_PUBLIC_OUTPUT_MODE=export npm run build"
+      ? "cd /app && npm run build:static"
       : "npm run build:static";
     
     console.log(`Executing command: ${buildCommand}`);
+    
+    console.log(`Current working directory: ${appRoot}`);
+    console.log(`Directory contents: ${fs.readdirSync(appRoot).join(', ')}`);
     
     const { stdout, stderr } = await execAsync(buildCommand, {
       cwd: appRoot,
@@ -48,7 +51,8 @@ async function handleExport(request: Request) {
         ...process.env,
         NEXT_PUBLIC_OUTPUT_MODE: "export",
         NODE_ENV: "production"
-      }
+      },
+      maxBuffer: 10 * 1024 * 1024 // 10MB buffer for large outputs
     });
     
     console.log("Static export stdout:", stdout);
