@@ -14,8 +14,8 @@ if (process.env.NEXT_PUBLIC_OUTPUT_MODE === "export") {
 
 async function renameFiles() {
   for (const file of ignoreFiles) {
-    const filePath = resolve(file);
-    const renamedPath = resolve(file.replace(/([^/]+)$/, "_$1"));
+    const filePath = resolve(process.cwd(), file);
+    const renamedPath = resolve(process.cwd(), file.replace(/([^/]+)$/, "_$1"));
 
     try {
       await access(filePath, constants.F_OK);
@@ -29,8 +29,8 @@ async function renameFiles() {
 
 async function restoreFiles() {
   for (const file of ignoreFiles) {
-    const filePath = resolve(file);
-    const renamedPath = resolve(file.replace(/([^/]+)$/, "_$1"));
+    const filePath = resolve(process.cwd(), file);
+    const renamedPath = resolve(process.cwd(), file.replace(/([^/]+)$/, "_$1"));
 
     try {
       await access(renamedPath, constants.F_OK);
