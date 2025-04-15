@@ -535,6 +535,34 @@ export default function Page() {
           <Link href="/create">
             <Button size="xl">新しいレポートを作成する</Button>
           </Link>
+          <Button 
+            size="xl" 
+            ml={4}
+            onClick={async () => {
+              try {
+                const clientBaseUrl = process.env.NEXT_PUBLIC_CLIENT_BASEPATH || "http://localhost:3000";
+                const response = await fetch(`${clientBaseUrl}/api/static-export`);
+                
+                if (!response.ok) {
+                  const errorData = await response.json();
+                  throw new Error(errorData.error || "静的ファイルのエクスポートに失敗しました");
+                }
+                
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const link = document.createElement("a");
+                link.href = url;
+                link.download = `kouchou-static-export-${new Date().toISOString().slice(0, 10)}.zip`;
+                link.click();
+                window.URL.revokeObjectURL(url);
+              } catch (error) {
+                console.error(error);
+                alert("エクスポートに失敗しました: " + (error instanceof Error ? error.message : String(error)));
+              }
+            }}
+          >
+            全レポートをエクスポート
+          </Button>
         </HStack>
       </Box>
     </div>
