@@ -4,6 +4,8 @@ import AdmZip from "adm-zip";
 import fs from "fs";
 import path from "path";
 
+export const dynamic = "force-static";
+
 export async function GET() {
   try {
     console.log("Starting static build...");
