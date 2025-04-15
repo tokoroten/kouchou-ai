@@ -1,4 +1,4 @@
-import { generateStaticParams } from "@/app/[slug]/page";
+import { generateStaticParams } from "../_opengraph-image";
 import { OpImage } from "../_op-image";
 
 export { generateStaticParams };
