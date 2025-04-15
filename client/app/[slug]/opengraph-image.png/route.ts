@@ -2,6 +2,7 @@ import { generateStaticParams } from "../__opengraph-image";
 import { OpImage } from "../_op-image";
 
 export { generateStaticParams };
+export const dynamic = "force-static";
 
 type PageProps = {
   params: Promise<{

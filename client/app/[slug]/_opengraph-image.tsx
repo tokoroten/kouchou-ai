@@ -1,6 +1,7 @@
 import { OpImage, contentType, size } from "./_op-image";
 
 export { size, contentType };
+export const dynamic = "force-static";
 
 export async function generateStaticParams() {
   return [];
