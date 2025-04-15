@@ -9,7 +9,28 @@ export const dynamic = "force-static";
 export async function GET() {
   try {
     console.log("Starting static build...");
-    execSync("npm run build:static", { stdio: "inherit" });
+    
+    fs.writeFileSync(
+      path.resolve(process.cwd(), "next.config.static.ts"),
+      `
+import type { NextConfig } from "next";
+
+const nextConfig: NextConfig = {
+  output: "export",
+  trailingSlash: true,
+  images: {
+    unoptimized: true,
+  },
+  experimental: {
+    optimizePackageImports: ["@chakra-ui/react"],
+  },
+};
+
+export default nextConfig;
+      `
+    );
+    
+    execSync("NEXT_PUBLIC_OUTPUT_MODE=export cp next.config.static.ts next.config.ts && npm run build:static", { stdio: "inherit" });
     console.log("Static build completed.");
 
     const zip = new AdmZip();
