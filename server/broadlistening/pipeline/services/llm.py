@@ -237,7 +237,7 @@ def request_to_local_llm(
         raise
 
 
-def request_to_chat_openai(
+def chat_completion_by_provider(
     messages: list[dict],
     model: str = "gpt-4o",
     is_json: bool = False,
@@ -257,6 +257,24 @@ def request_to_chat_openai(
         return request_to_local_llm(messages, model, is_json, json_schema, address)
     else:
         raise ValueError(f"Unknown provider: {provider}")
+
+# Legacy function name for backward compatibility
+def request_to_chat_openai(
+    messages: list[dict],
+    model: str = "gpt-4o",
+    is_json: bool = False,
+    json_schema: dict | type[BaseModel] | None = None,
+    provider: str = "openai",
+    local_llm_address: str | None = None,
+) -> str:
+    return chat_completion_by_provider(
+        messages=messages,
+        model=model,
+        is_json=is_json,
+        json_schema=json_schema,
+        provider=provider,
+        local_llm_address=local_llm_address,
+    )
 
 
 EMBDDING_MODELS = [

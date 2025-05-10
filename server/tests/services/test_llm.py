@@ -5,6 +5,7 @@ import openai
 import pytest
 from broadlistening.pipeline.services.llm import (
     _validate_model,
+    chat_completion_by_provider,
     request_to_azure_chatcompletion,
     request_to_azure_embed,  # noqa: F401
     request_to_chat_openai,
@@ -449,6 +450,112 @@ class TestLLMService:
                 # 3回リトライしても失敗するため、最終的に例外が発生する
                 with pytest.raises(openai.RateLimitError):
                     request_to_azure_chatcompletion(messages)
+
+    def test_chat_completion_by_provider_use_openai(self, mock_openai_response):
+        """chat_completion_by_provider: provider=openaiの場合はrequest_to_openaiを使用する"""
+        messages = [
+            {"role": "system", "content": "You are a helpful assistant."},
+            {"role": "user", "content": "Hello, world!"},
+        ]
+
+        # request_to_openaiをモック化
+        with patch(
+            "broadlistening.pipeline.services.llm.request_to_openai", return_value="OpenAI response"
+        ) as mock_request_to_openai:
+            response = chat_completion_by_provider(messages, model="gpt-4o", provider="openai")
+
+        assert response == "OpenAI response"
+        mock_request_to_openai.assert_called_once_with(messages, "gpt-4o", False, None)
+
+    def test_chat_completion_by_provider_use_azure(self, mock_openai_response):
+        """chat_completion_by_provider: provider=azureの場合はrequest_to_azure_chatcompletionを使用する"""
+        messages = [
+            {"role": "system", "content": "You are a helpful assistant."},
+            {"role": "user", "content": "Hello, world!"},
+        ]
+
+        # request_to_azure_chatcompletionをモック化
+        with patch(
+            "broadlistening.pipeline.services.llm.request_to_azure_chatcompletion", return_value="Azure response"
+        ) as mock_request_to_azure:
+            # Azureの環境変数検証関数をモック化
+            with patch("broadlistening.pipeline.services.llm.validate_azure_env") as mock_validate_azure:
+                response = chat_completion_by_provider(messages, model="gpt-4o", is_json=True, provider="azure")
+
+        assert response == "Azure response"
+        mock_request_to_azure.assert_called_once_with(messages, True, None)
+        # Azure環境変数バリデーションが呼ばれたことを確認
+        mock_validate_azure.assert_called_once()
+
+    def test_chat_completion_by_provider_with_json_schema(self, mock_openai_response):
+        """chat_completion_by_provider: json_schemaパラメータを指定できる"""
+        messages = [
+            {"role": "system", "content": "You are a helpful assistant."},
+            {"role": "user", "content": "Hello, world!"},
+        ]
+
+        # JSON Schemaを定義
+        json_schema = {
+            "type": "json_schema",
+            "json_schema": {
+                "name": "TestSchema",
+                "schema": {
+                    "type": "object",
+                    "properties": {
+                        "test": {"type": "string"},
+                    },
+                    "required": ["test"],
+                },
+            },
+        }
+
+        # request_to_openaiをモック化
+        with patch(
+            "broadlistening.pipeline.services.llm.request_to_openai", return_value="OpenAI response"
+        ) as mock_request_to_openai:
+            response = chat_completion_by_provider(messages, model="gpt-4o", json_schema=json_schema, provider="openai")
+
+        assert response == "OpenAI response"
+        mock_request_to_openai.assert_called_once_with(messages, "gpt-4o", False, json_schema)
+
+    def test_chat_completion_by_provider_with_pydantic_model(self, mock_openai_response):
+        """chat_completion_by_provider: Pydantic BaseModelを指定できる"""
+        messages = [
+            {"role": "system", "content": "You are a helpful assistant."},
+            {"role": "user", "content": "Hello, world!"},
+        ]
+
+        # テスト用のPydantic BaseModelを定義
+        class TestModel(BaseModel):
+            test: str = Field(..., description="テスト用フィールド")
+
+        # request_to_openaiをモック化
+        with patch(
+            "broadlistening.pipeline.services.llm.request_to_openai", return_value="OpenAI response"
+        ) as mock_request_to_openai:
+            response = chat_completion_by_provider(messages, model="gpt-4o", json_schema=TestModel, provider="openai")
+
+        assert response == "OpenAI response"
+        mock_request_to_openai.assert_called_once_with(messages, "gpt-4o", False, TestModel)
+
+    # Legacy function compatibility tests
+    def test_request_to_chat_openai_compatibility(self, mock_openai_response):
+        """request_to_chat_openai: 互換性のために残されたレガシー関数として機能する"""
+        messages = [
+            {"role": "system", "content": "You are a helpful assistant."},
+            {"role": "user", "content": "Hello, world!"},
+        ]
+
+        # chat_completion_by_providerをモック化
+        with patch(
+            "broadlistening.pipeline.services.llm.chat_completion_by_provider", return_value="Test response"
+        ) as mock_chat_completion:
+            response = request_to_chat_openai(messages, model="gpt-4o", is_json=True, provider="azure")
+
+        assert response == "Test response"
+        mock_chat_completion.assert_called_once_with(
+            messages=messages, model="gpt-4o", is_json=True, json_schema=None, provider="azure", local_llm_address=None
+        )
 
     def test_request_to_chat_openai_use_openai(self, mock_openai_response):
         """request_to_chat_openai: provider=openaiの場合はrequest_to_openaiを使用する"""
