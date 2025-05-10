@@ -20,8 +20,6 @@ export default function Page() {
   const [verificationResult, setVerificationResult] = useState<{
     success: boolean;
     message: string;
-    use_azure: boolean;
-    available_models?: string[];
     error_type?: string;
     error_detail?: string;
   } | null>(null);
@@ -116,12 +114,6 @@ export default function Page() {
                         詳細: {verificationResult.error_detail}
                       </Text>
                     )}
-                    <Text mb={1}>
-                      使用モード:{" "}
-                      {verificationResult.use_azure
-                        ? "Azure OpenAI Service"
-                        : "OpenAI API"}
-                    </Text>
                   </VStack>
                 </HStack>
               </Box>

@@ -477,10 +477,14 @@ class TestLLMService:
         with patch(
             "broadlistening.pipeline.services.llm.request_to_azure_chatcompletion", return_value="Azure response"
         ) as mock_request_to_azure:
-            response = request_to_chat_openai(messages, model="gpt-4o", is_json=True, provider="azure")
+            # Azureの環境変数検証関数をモック化
+            with patch("broadlistening.pipeline.services.llm.validate_azure_env") as mock_validate_azure:
+                response = request_to_chat_openai(messages, model="gpt-4o", is_json=True, provider="azure")
 
         assert response == "Azure response"
         mock_request_to_azure.assert_called_once_with(messages, True, None)
+        # Azure環境変数バリデーションが呼ばれたことを確認
+        mock_validate_azure.assert_called_once()
 
     def test_request_to_chat_openai_with_json_schema(self, mock_openai_response):
         """request_to_chat_openai: json_schemaパラメータを指定できる"""

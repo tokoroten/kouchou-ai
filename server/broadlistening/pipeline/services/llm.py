@@ -11,9 +11,8 @@ from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_ex
 DOTENV_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../../.env"))
 load_dotenv(DOTENV_PATH)
 
-# check env
-use_azure = os.getenv("USE_AZURE", "false").lower()
-if use_azure == "true":
+# check env for Azure requirements when using Azure explicitly
+def validate_azure_env():
     if not os.getenv("AZURE_CHATCOMPLETION_ENDPOINT"):
         raise RuntimeError("AZURE_CHATCOMPLETION_ENDPOINT environment variable is not set")
     if not os.getenv("AZURE_CHATCOMPLETION_DEPLOYMENT_NAME"):
@@ -247,6 +246,7 @@ def request_to_chat_openai(
     local_llm_address: str | None = None,
 ) -> str:
     if provider == "azure":
+        validate_azure_env()  # Validate Azure environment variables when explicitly using Azure
         return request_to_azure_chatcompletion(messages, is_json, json_schema)
     elif provider == "openai":
         return request_to_openai(messages, model, is_json, json_schema)
