@@ -17,6 +17,8 @@ type Props = {
   currentMinValue: number;
   showClusterLabels?: boolean;
   onToggleClusterLabels?: (show: boolean) => void;
+  showAxisLabels?: boolean;
+  onToggleAxisLabels?: (show: boolean) => void;
 };
 
 export function DisplaySettingDialog({
@@ -26,6 +28,8 @@ export function DisplaySettingDialog({
   currentMinValue,
   showClusterLabels = false,
   onToggleClusterLabels,
+  showAxisLabels = false,
+  onToggleAxisLabels,
 }: Props) {
   const [maxDensity, setMaxDensity] = useState(currentMaxDensity);
   const [minValue, setMinValue] = useState(currentMinValue);
@@ -61,6 +65,30 @@ export function DisplaySettingDialog({
                   size="sm"
                 />
               </HStack>
+            </Box>
+            
+            <Box 
+              p={2} 
+              borderRadius="md" 
+              borderWidth="1px" 
+              borderColor="gray.200"
+              mb={2}
+            >
+              <Box>
+                <HStack gap={2} alignItems="center" mb={1}>
+                  <Text fontSize="sm">軸ラベルを表示（試験中）</Text>
+                  <Spacer />
+                  <Switch 
+                    checked={showAxisLabels} 
+                    onChange={() => onToggleAxisLabels?.(!showAxisLabels)}
+                    size="sm"
+                  />
+                </HStack>
+                <Text fontSize="xs" color="gray.500" ml={1}>
+                  ※AIが生成したラベルのため、内容は不確かな場合があります。<br/>
+                  データの多様性が高い場合、不確かなラベルが生成されることがあります。
+                </Text>
+              </Box>
             </Box>
           </Box>
 

@@ -12,6 +12,8 @@ type ReportProps = {
   onExitFullscreen: () => void;
   showClusterLabels: boolean;
   onToggleClusterLabels: (show: boolean) => void;
+  showAxisLabels: boolean;
+  onToggleAxisLabels: (show: boolean) => void;
   treemapLevel: string;
   onTreeZoom: (level: string) => void;
 };
@@ -23,34 +25,32 @@ export function Chart({
   onExitFullscreen,
   showClusterLabels,
   onToggleClusterLabels,
+  showAxisLabels,
+  onToggleAxisLabels,
   treemapLevel,
   onTreeZoom,
 }: ReportProps) {
 
   let axisInfo: {
     x: {
-      name: string;
-      min: string;
-      max: string;
+      min_label: string;
+      max_label: string;
     };
     y: {
-      name: string;
-      min: string;
-      max: string;
+      min_label: string;
+      max_label: string;
     };
   } | undefined = undefined;
   console.log(result.x_axis, result.y_axis);
   if ("x_axis" in result && "y_axis" in result) {
     axisInfo = {
       x: {
-        name: result.x_axis.axis_name,
-        min: result.x_axis.min_label,
-        max: result.x_axis.max_label,
+        min_label: result.x_axis.min_label,
+        max_label: result.x_axis.max_label,
       },
       y: {
-        name: result.y_axis.axis_name,
-        min: result.y_axis.min_label,
-        max: result.y_axis.max_label,
+        min_label: result.y_axis.min_label,
+        max_label: result.y_axis.max_label,
       },
     };
   }
@@ -95,6 +95,7 @@ export function Chart({
             }
             onHover={() => setTimeout(avoidHoverTextCoveringShrinkButton, 500)}
             showClusterLabels={showClusterLabels}
+            showAxisLabels={showAxisLabels}
             axisInfo={axisInfo}
           />
         )}
@@ -135,6 +136,7 @@ export function Chart({
                 : Math.max(...result.clusters.map((c) => c.level))
             }
             showClusterLabels={showClusterLabels}
+            showAxisLabels={showAxisLabels}
             axisInfo={axisInfo}
           />
         )}

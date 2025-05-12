@@ -7,9 +7,15 @@ from typing import TypedDict
 
 import pandas as pd
 
+from services.llm import request_to_chat_openai
+from pydantic import BaseModel, Field
+
 ROOT_DIR = Path(__file__).parent.parent.parent.parent
 CONFIG_DIR = ROOT_DIR / "scatter" / "pipeline" / "configs"
 
+class AxisLabelResponse(BaseModel):
+    min_label: str = Field(..., description="小さな値にはどのような傾向があるか")
+    max_label: str = Field(..., description="大きな値にはどのような傾向があるか")
 
 class Argument(TypedDict):
     arg_id: str
@@ -72,14 +78,18 @@ def hierarchical_aggregation(config):
     print(overview)
     results["overview"] = overview
 
-    x_result = generate_axis_labels(results["arguments"], is_x_axis=True)
-    y_result = generate_axis_labels(results["arguments"], is_x_axis=False)
-    print("x_result", x_result)
-    print("y_result", y_result)
+    if True: # todo: この処理を丸っと別の場所に分離する
+        model = config["model"]
+        provider = config["provider"]
+        local_llm_address = config.get("local_llm_address", "ollama:11434")
+        x_result = generate_axis_labels(results["arguments"], is_x_axis=True, provider=provider, model=model, localllm_address=local_llm_address)
+        y_result = generate_axis_labels(results["arguments"], is_x_axis=False, provider=provider, model=model, localllm_address=local_llm_address)
+        print("x_result", x_result)
+        print("y_result", y_result)
 
-    results["x_axis"] = x_result
-    results["y_axis"] = y_result
-    
+        results["x_axis"] = x_result
+        results["y_axis"] = y_result
+        
     with open(path, "w") as file:
         json.dump(results, file, indent=2, ensure_ascii=False)
     # TODO: サンプリングロジックを実装したいが、現状は全件抽出
@@ -88,7 +98,7 @@ def hierarchical_aggregation(config):
     if config["is_pubcom"]:
         add_original_comments(labels, arguments, relation_df, clusters, config)
 
-def generate_axis_labels(arguments:list[Argument], is_x_axis: bool = True):
+def generate_axis_labels(arguments:list[Argument], is_x_axis: bool = True, provider: str = "openai", model: str = "gpt-4o-mini", localllm_address: str="ollama:11434") -> dict:
     # xのmaxとminを取得し、10等分する
     # その中で最もyが平均値に近いコメントを選ぶ
 
@@ -98,10 +108,9 @@ def generate_axis_labels(arguments:list[Argument], is_x_axis: bool = True):
     axis_min = min(item[axis1] for item in arguments)
     axis_max = max(item[axis1] for item in arguments)
     axis_range = axis_max - axis_min
-    axis_step = axis_range / 10
+    axis_step = axis_range / 20
     labels = []
-    axis2_ave = sum(item[axis2] for item in arguments) / len(arguments)
-    for i in range(11):
+    for i in range(21):
         range_min = axis_min + i * axis_step
         range_max = axis_min + (i + 1) * axis_step
         # xの範囲に該当するコメントを抽出
@@ -109,35 +118,28 @@ def generate_axis_labels(arguments:list[Argument], is_x_axis: bool = True):
 
         if len(items) > 0:
             # yが平均値に近いものを選ぶ
+            axis2_ave = sum(item[axis2] for item in items) / len(items)
             items = sorted(items, key=lambda item: abs(item[axis2] - axis2_ave))
             labels.append(items[0]["argument"])
         else:
             pass
     
-    # ラベルを生成
+    # LLMでラベルを生成
     system_prompt = """
-あなたは、トップコンサルタントである。 1から10番のある特性に応じたソートが行われた文章が与えられます。
+あなたは、トップコンサルタントである。 1から20番のある特性に応じたソートが行われた文章が与えられます。
 あなたはどのような軸でソートされたデータなのかの全体像を考えなさい。
-そして、値が小さい方はどのような傾向があるのか、また、値が大きい方はどのような傾向があるのかを考えなさい。
+値が小さい方はどのような傾向があるのか、また、値が大きい方はどのような傾向があるのかを考えなさい。
 
 以下のような形式で出力せよ。
 {
-    "axis_name": "どのような特性の軸か",
-    "min_label": "小さな値にはどのような傾向があるか",
-    "max_label": "大きな値にはどのような傾向があるか"
+    "min_label": "小さな値の側にはどのような傾向があるか(25文字程度)",
+    "max_label": "大きな値の側にはどのような傾向があるか(25文字程度)"
 }
 """
 
     user_prompt = ""
     for i, label in enumerate(labels):
         user_prompt += f"#{i} : {label}\n"
-
-    from services.llm import request_to_chat_openai
-    from pydantic import BaseModel, Field
-    class AxisLabelResponse(BaseModel):
-        axis_name: str = Field(..., description="どのような特性の軸か")
-        min_label: str = Field(..., description="小さな値にはどのような傾向があるか")
-        max_label: str = Field(..., description="大きな値にはどのような傾向があるか")
  
     messages = [
         {"role": "system", "content": system_prompt},
@@ -147,8 +149,9 @@ def generate_axis_labels(arguments:list[Argument], is_x_axis: bool = True):
 
     raw_response = request_to_chat_openai(
         messages=messages,
-        model="gpt-4o-mini",
-        provider="openai",
+        model=model,
+        provider=provider,
+        local_llm_address=localllm_address,
         json_schema=AxisLabelResponse,
     )
 

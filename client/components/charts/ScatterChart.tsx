@@ -8,16 +8,15 @@ type Props = {
   targetLevel: number;
   onHover?: () => void;
   showClusterLabels?: boolean;
+  showAxisLabels?: boolean;
   axisInfo?: {
     x: {
-      name: string;
-      min: string;
-      max: string;
+      min_label: string;
+      max_label: string;
     };
     y: {
-      name: string;
-      min: string;
-      max: string;
+      min_label: string;
+      max_label: string;
     };
   };
 };
@@ -28,6 +27,7 @@ export function ScatterChart({
   targetLevel,
   onHover,
   showClusterLabels,
+  showAxisLabels,
   axisInfo,
 }: Props) {
   const targetClusters = clusterList.filter(
@@ -177,6 +177,80 @@ export function ScatterChart({
     };
   });
 
+  // 軸ラベルのアノテーション
+  const axisAnnotations: any[] = showAxisLabels !== false ? [
+    // X軸の小さい側のラベル（縦中央の左端に90度回転）
+    {
+      text: axisInfo ? axisInfo.x.min_label : "",
+      x: 0,
+      y: 0.5, // 縦中央に配置
+      xref: 'paper',
+      yref: 'paper',
+      xanchor: 'center',
+      yanchor: 'middle',
+      showarrow: false,
+      font: {
+        size: 15,
+        color: '#555',
+      },
+      textangle: 90, // 90度回転
+      xshift: "-15" as any, // 左側に寄せる
+    },
+    // X軸の大きい側のラベル（縦中央の右端に90度回転）
+    {
+      text: axisInfo ? axisInfo.x.max_label : "",
+      x: 1,
+      y: 0.5, // 縦中央に配置
+      xref: 'paper',
+      yref: 'paper',
+      xanchor: 'center',
+      yanchor: 'middle',
+      showarrow: false,
+      font: {
+        size: 15,
+        color: '#555',
+      },
+      textangle: 90, // 90度回転
+      xshift: "15" as any, // 右側に寄せる
+    },
+    // Y軸の小さい側のラベル（横中央の下部に配置）
+    {
+      text: axisInfo ? axisInfo.y.min_label : "",
+      x: 0.5, // 横中央に配置
+      y: 0,
+      xref: 'paper',
+      yref: 'paper',
+      xanchor: 'center',
+      yanchor: 'top',
+      showarrow: false,
+      font: {
+        size: 15,
+        color: '#555',
+      },
+      bgcolor: 'rgba(255, 255, 255, 0.8)', // 半透明の背景
+      borderpad: 2,
+      yshift: "-15" as any, // 下側に寄せる
+    },
+    // Y軸の大きい側のラベル（横中央の上部に配置）
+    {
+      text: axisInfo ? axisInfo.y.max_label : "",
+      x: 0.5, // 横中央に配置
+      y: 1,
+      xref: 'paper',
+      yref: 'paper',
+      xanchor: 'center',
+      yanchor: 'bottom',
+      showarrow: false,
+      font: {
+        size: 15,
+        color: '#555',
+      },
+      bgcolor: 'rgba(255, 255, 255, 0.8)', // 半透明の背景
+      borderpad: 2,
+      yshift: "15" as any, // 上側に寄せる
+    }
+  ] : [];
+
   return (
     <Box width="100%" height="100%" display="flex" flexDirection="column">
       <Box position="relative" flex="1">
@@ -203,103 +277,22 @@ export function ScatterChart({
         },
       }))}
       layout={{
-        margin: { l: 50, r: 50, b: 50, t: 50 }, // マージンを増やして軸ラベルのスペースを確保
+        margin: showAxisLabels ? { l: 50, r: 50, b: 50, t: 50 } : { l: 0, r: 0, b: 0, t: 0 }, // マージンを増やして軸ラベルのスペースを確保
         xaxis: {
           zeroline: false,
-          showticklabels: true, // 目盛りラベルを表示
-          title: {
-            text: axisInfo ? axisInfo.x.name : "X軸",
-            font: {
-              size: 14,
-              color: '#333',
-            },
-          },
+          showticklabels: false, // 目盛りラベルを非表示
+          showgrid: true, // グリッド線を非表示
         },
         yaxis: {
           zeroline: false,
-          showticklabels: true, // 目盛りラベルを表示
-          title: {
-            text: axisInfo ? axisInfo.y.name : "Y軸",
-            font: {
-              size: 14,
-              color: '#333',
-            },
-            standoff: 0, // タイトルと軸の間隔を調整
-            // @ts-ignore - Plotlyの型定義にangleがないが実際は機能する
-            angle: -90, // 90度回転（左に倒す）
-          } as any,
+          showticklabels: false, // 目盛りラベルを非表示
+          showgrid: true, // グリッド線を非表示
         },
         hovermode: "closest",
         dragmode: "pan", // ドラッグによる移動（パン）を有効化
         annotations: [
-          // X軸の小さい側のラベル
-          {
-            text: axisInfo ? axisInfo.x.min : "小",
-            x: 0,
-            y: 0,
-            xref: 'paper',
-            yref: 'paper',
-            xanchor: 'left',
-            yanchor: 'top',
-            showarrow: false,
-            font: {
-              size: 12,
-              color: '#555',
-            },
-            xshift: 5,
-            yshift: -15,
-          },
-          // X軸の大きい側のラベル
-          {
-            text: axisInfo ? axisInfo.x.max : "大",
-            x: 1,
-            y: 0,
-            xref: 'paper',
-            yref: 'paper',
-            xanchor: 'right',
-            yanchor: 'top',
-            showarrow: false,
-            font: {
-              size: 12,
-              color: '#555',
-            },
-            xshift: -5,
-            yshift: -15,
-          },
-          // Y軸の小さい側のラベル
-          {
-            text: axisInfo ? axisInfo.y.min : "小",
-            x: 0.02, // グラフ内に配置
-            y: 0.02,
-            xref: 'paper',
-            yref: 'paper',
-            xanchor: 'left',
-            yanchor: 'bottom',
-            showarrow: false,
-            font: {
-              size: 12,
-              color: '#555',
-            },
-            bgcolor: 'rgba(255, 255, 255, 0.8)', // 半透明の背景
-            borderpad: 2,
-          },
-          // Y軸の大きい側のラベル
-          {
-            text: axisInfo ? axisInfo.y.max : "大",
-            x: 0.02, // グラフ内に配置
-            y: 0.98,
-            xref: 'paper',
-            yref: 'paper',
-            xanchor: 'left',
-            yanchor: 'top',
-            showarrow: false,
-            font: {
-              size: 12,
-              color: '#555',
-            },
-            bgcolor: 'rgba(255, 255, 255, 0.8)', // 半透明の背景
-            borderpad: 2,
-          },
+          // 軸ラベル
+          ...(axisAnnotations as any),
           // クラスターのラベル
           ...(showClusterLabels ? clusterData.map((data) => ({
             x: data.centerX,
